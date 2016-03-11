@@ -19,7 +19,13 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#ifdef ESP8266
+extern "C" {
 #include <setjmp.h>
+}
+#else
+#include <setjmp.h>
+#endif
 #include <stddef.h>
 #include <stdint.h>
 
@@ -102,6 +108,11 @@ protected:
   static const size_t STACK_MAX = 32768;
 
 #elif defined(ARDUINO_ARCH_SAMD)
+  /** Default stack size and stack max. */
+  static const size_t DEFAULT_STACK_SIZE = 512;
+  static const size_t STACK_MAX = 16384;
+
+#elif defined(ESP8266)
   /** Default stack size and stack max. */
   static const size_t DEFAULT_STACK_SIZE = 512;
   static const size_t STACK_MAX = 16384;

@@ -35,6 +35,9 @@ extern size_t __malloc_margin;
 
 #elif defined(ARDUINO_ARCH_SAMD)
 #define RAMEND 0x20008000
+
+#elif defined(ESP8266)
+#define RAMEND 0x40000000
 #endif
 
 // Single-ton
@@ -138,4 +141,3 @@ void yield(void)
 {
   Scheduler.yield();
 }
-
