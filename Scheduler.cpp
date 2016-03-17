@@ -122,7 +122,8 @@ bool SchedulerClass::start(func_t taskSetup, func_t taskLoop, size_t stackSize)
 void SchedulerClass::yield()
 {
 #ifdef ESP8266
-  cont_run(s_running->context, s_running->topFunc);
+  if(s_running != &s_main)
+    cont_run(&s_running->context, s_running->topFunc);
   // Next task in run queue will continue
   s_running = s_running->next;
 #else
@@ -143,16 +144,30 @@ size_t SchedulerClass::stack()
 }
 #endif
 
+
 void SchedulerClass::init(func_t setup, func_t loop, const uint8_t* stack)
 {
+#ifdef ESP8266
+  // I really hate doing this, but the fancy stack-allocation trick I don't
+  // think is gonna be practical without SETJMP
+  static task_t task_pool[3];
+  static uint8_t task_pool_counter = 0;
+  task_t& task = task_pool[task_pool_counter++];
+#else
   // Add task last in run queue (main task)
   task_t task;
+#endif
   task.next = &s_main;
   task.prev = s_main.prev;
   s_main.prev->next = &task;
   s_main.prev = &task;
 #ifndef ESP8266
   task.stack = stack;
+#endif
+
+#ifdef ESP8266
+  task.topFunc = loop;
+  cont_init(&task.context);
 #endif
 
 #ifndef ESP8266

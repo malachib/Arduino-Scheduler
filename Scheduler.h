@@ -94,7 +94,7 @@ protected:
     task_t* next;		//!< Next task.
     task_t* prev;		//!< Previous task.
 #ifdef ESP8266
-    cont_t* context;    // ESP8266-Arduino continuation context
+    cont_t context __attribute__ ((aligned (16)));;    // ESP8266-Arduino continuation context
     void (*topFunc)();  // starting point for context to run from
 #else
     jmp_buf context;		//!< Task context.
