@@ -102,12 +102,18 @@ bool SchedulerClass::start(func_t taskSetup, func_t taskLoop, size_t stackSize)
 
 void SchedulerClass::yield()
 {
+#ifdef ESP8266
+  cont_run(s_running->context, s_running->topFunc);
+  // Next task in run queue will continue
+  s_running = s_running->next;
+#else
   // Caller will continue here on yield
   if (setjmp(s_running->context)) return;
 
   // Next task in run queue will continue
   s_running = s_running->next;
   longjmp(s_running->context, true);
+#endif
 }
 
 size_t SchedulerClass::stack()
@@ -133,9 +139,17 @@ void SchedulerClass::init(func_t setup, func_t loop, const uint8_t* stack)
   }
 }
 
+#ifdef ESP8266
+void esp_schedule();
+void esp_yield();
+#endif
+
 extern "C"
 void yield(void)
 {
   Scheduler.yield();
+#ifdef ESP8266
+  esp_schedule();
+  esp_yield();
+#endif
 }
-

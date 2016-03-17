@@ -83,8 +83,13 @@ protected:
   struct task_t {
     task_t* next;		//!< Next task.
     task_t* prev;		//!< Previous task.
+#ifdef ESP8266
+    cont_t* context;    // ESP8266-Arduino continuation context
+    void (*topFunc)();  // starting point for context to run from
+#else
     jmp_buf context;		//!< Task context.
     const uint8_t* stack;	//!< Task stack.
+#endif
   };
 
 #if defined(TEENSYDUINO) && defined(__MK20DX256__)
