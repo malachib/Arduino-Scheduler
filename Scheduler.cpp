@@ -123,7 +123,7 @@ void SchedulerClass::yield()
 {
 #ifdef ESP8266
   if(s_running != &s_main)
-    cont_run(&s_running->context, s_running->topFunc);
+    cont_yield(&s_running->context);
   // Next task in run queue will continue
   s_running = s_running->next;
 #else
@@ -177,6 +177,13 @@ void SchedulerClass::init(func_t setup, func_t loop, const uint8_t* stack)
     while (1) loop();
   }
 #endif
+}
+
+
+void SchedulerClass::service()
+{
+  for(auto t = s_main.prev; t != NULL && t != &s_main; t = t->prev)
+    cont_run(&t->context, t->topFunc);
 }
 
 #ifdef ESP8266

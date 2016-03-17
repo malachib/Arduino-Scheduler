@@ -75,6 +75,10 @@ public:
    * @return bytes
    */
   static size_t stack();
+  
+#ifdef ESP8266
+  static void service();
+#endif
 
 protected:
   /**
