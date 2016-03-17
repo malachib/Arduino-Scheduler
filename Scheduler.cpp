@@ -35,6 +35,11 @@ extern size_t __malloc_margin;
 
 #elif defined(ARDUINO_ARCH_SAMD)
 #define RAMEND 0x20008000
+
+#elif defined(ESP8266)
+// pretty sure ESP8266 has more RAM than this, but we're not actually
+// managing our own stacks anyway (cont.h defines 1k stacks always)
+#define RAMEND 0x20008000
 #endif
 
 // Single-ton
@@ -44,7 +49,11 @@ SchedulerClass Scheduler;
 SchedulerClass::task_t SchedulerClass::s_main = {
   &SchedulerClass::s_main,
   &SchedulerClass::s_main,
+#ifdef ESP8266
+  NULL,
+#else
   { 0 },
+#endif
   NULL
 };
 
@@ -66,6 +75,7 @@ bool SchedulerClass::start(func_t taskSetup, func_t taskLoop, size_t stackSize)
   // Check called from main task and valid task loop function
   if ((s_running != &s_main) || (taskLoop == NULL)) return (false);
 
+#ifndef ESP8266
   // Adjust stack size with size of task context
   stackSize += sizeof(task_t);
 
@@ -73,6 +83,7 @@ bool SchedulerClass::start(func_t taskSetup, func_t taskLoop, size_t stackSize)
   size_t frame = RAMEND - (size_t) &frame;
   uint8_t stack[s_top - frame];
   if (s_main.stack == NULL) s_main.stack = stack;
+#endif
 
 #if defined(ARDUINO_ARCH_AVR)
   // Check that the task can be allocated
@@ -92,11 +103,19 @@ bool SchedulerClass::start(func_t taskSetup, func_t taskLoop, size_t stackSize)
   if (s_top + stackSize > STACK_MAX) return (false);
 #endif
 
+#ifndef ESP8266
   // Adjust stack top for next task allocation
   s_top += stackSize;
+#endif
 
   // Initiate task with given functions and stack top
-  init(taskSetup, taskLoop, stack - stackSize);
+  init(taskSetup, taskLoop, 
+#ifdef ESP8266
+    0);
+#else
+    stack - stackSize);
+#endif
+
   return (true);
 }
 
@@ -116,11 +135,13 @@ void SchedulerClass::yield()
 #endif
 }
 
+#ifndef ESP8266
 size_t SchedulerClass::stack()
 {
   unsigned char marker;
   return (&marker - s_running->stack);
 }
+#endif
 
 void SchedulerClass::init(func_t setup, func_t loop, const uint8_t* stack)
 {
@@ -130,13 +151,17 @@ void SchedulerClass::init(func_t setup, func_t loop, const uint8_t* stack)
   task.prev = s_main.prev;
   s_main.prev->next = &task;
   s_main.prev = &task;
+#ifndef ESP8266
   task.stack = stack;
+#endif
 
+#ifndef ESP8266
   // Create context for new task, caller will return
   if (setjmp(task.context)) {
     if (setup != NULL) setup();
     while (1) loop();
   }
+#endif
 }
 
 #ifdef ESP8266

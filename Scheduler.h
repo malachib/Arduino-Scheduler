@@ -23,6 +23,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef ESP8266
+
+extern "C" {
+  #include "cont.h"
+
+  void esp_schedule();
+  void esp_yield();
+}
+#endif
+
 class SchedulerClass {
 public:
   /**
@@ -111,6 +121,11 @@ protected:
   static const size_t DEFAULT_STACK_SIZE = 512;
   static const size_t STACK_MAX = 16384;
 
+#elif defined(ESP8266)
+  /** Default stack size and stack max. */
+  /** NOTE: shouldn't matter for ESP since cont_t is managing this */
+  static const size_t DEFAULT_STACK_SIZE = 512;
+  static const size_t STACK_MAX = 16384;
 #else
 #error "Scheduler.h: board not supported"
 #endif
